@@ -1,13 +1,6 @@
 from django.db import models
-from datetime import datetime
 from django.utils.timezone import now
 # Create your models here.
-
-STATUS = (
-    ('a', 'Active'),
-    ('d', 'Done'),
-    ('c', 'Canceled'),
-)
 
 class Property(models.Model):
     title = models.CharField(max_length=255, )
@@ -16,7 +9,7 @@ class Property(models.Model):
     created_at = models.DateTimeField(default=now())
     updated_at = models.DateTimeField(default=now())
     disabled_at = models.DateTimeField(null=True)
-    status = models.CharField(max_length=35, choices=STATUS, default='Active')
+    status = models.CharField(max_length=35, default='Active')
 
     def __str__(self):
         return f'{self.id}, {self.address}, {self.description}'
@@ -28,7 +21,7 @@ class Activity(models.Model):
     title = models.TextField(max_length=255)
     updated_at = models.DateTimeField(null=True)
     created_at = models.DateTimeField()
-    status = models.CharField(max_length=35, choices=STATUS, default='Active')
+    status = models.CharField(max_length=35, default='Active')
 
     def __str__(self):
         return f'{self.id}, {self.property_id}, {self.title}'
