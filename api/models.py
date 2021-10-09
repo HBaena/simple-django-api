@@ -1,18 +1,22 @@
 from django.db import models
 from django.utils.timezone import now
+
 # Create your models here.
 
+
 class Property(models.Model):
-    title = models.CharField(max_length=255, )
+    title = models.CharField(
+        max_length=255,
+    )
     address = models.TextField()
     description = models.TextField()
     created_at = models.DateTimeField(default=now())
     updated_at = models.DateTimeField(default=now())
     disabled_at = models.DateTimeField(null=True)
-    status = models.CharField(max_length=35, default='Active')
+    status = models.CharField(max_length=35, default="Active")
 
     def __str__(self):
-        return f'{self.id}, {self.address}, {self.description}'
+        return f"{self.id}, {self.address}, {self.description}"
 
 
 class Activity(models.Model):
@@ -21,10 +25,10 @@ class Activity(models.Model):
     title = models.TextField(max_length=255)
     updated_at = models.DateTimeField(null=True)
     created_at = models.DateTimeField()
-    status = models.CharField(max_length=35, default='Active')
+    status = models.CharField(max_length=35, default="Active")
 
     def __str__(self):
-        return f'{self.id}, {self.property_id}, {self.title}'
+        return f"{self.id}, {self.property_id}, {self.title}"
 
 
 class Survery(models.Model):
@@ -33,4 +37,4 @@ class Survery(models.Model):
     created_at = models.DateTimeField()
 
     def __str__(self):
-        return f'{self.id}, {self.activity_id}, {self.answers}'
+        return f"{self.id}, {self.activity_id}, {self.answers}"
