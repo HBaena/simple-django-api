@@ -34,8 +34,8 @@ class Activity(models.Model):
         return f'{self.id}, {self.property_id}, {self.title}'
 
 
-class Survery(models.Model):
-    activity_id = models.OneToOneField(Activity, on_delete=models.CASCADE)
+class Survey(models.Model):
+    activity = models.OneToOneField(Activity, on_delete=models.CASCADE)
     answers = models.JSONField()
     created_at = models.DateTimeField()
 
