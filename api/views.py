@@ -5,8 +5,8 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 # from rest_framework.views import APIView
 # from rest_framework.decorators import api_view
-from .serializers import PropertySerializer, ActivitySerializer
-from .models import Property, Activity
+from .serializers import PropertySerializer, ActivitySerializer, SurveySerializer
+from .models import Property, Activity, Survey
 from .responses import ErrorMsg, StatusMsg, SuccessMsg
 # from icecream import ic
 # from datetime import timedelta
@@ -20,12 +20,15 @@ from django.utils.timezone import timedelta
 def custom_retrieve(serializer, request, pk, *args, **kwargs):
     model = serializer.Meta.model
     instance = model.objects.filter(pk=pk).first()
+    serializer_context = {
+        'request': request,
+    }
     if not instance:
         return Response(
             dict(status=StatusMsg.ERROR, error=ErrorMsg.NOT_FOUND), status=400
         )
     else:
-        return Response(dict(status=StatusMsg.OK, data=serializer(instance).data))
+        return Response(dict(status=StatusMsg.OK, data=serializer(instance, context=serializer_context).data))
 
 
 def custom_create(serializer, request, *args, **kwargs):
@@ -87,6 +90,10 @@ class ActivityViewSet(CustomView):
     queryset = Activity.objects.all().order_by('created_at')
     serializer_class = ActivitySerializer
 
+    # def retrieve(self, request, pk):
+
+    # build_absolute_uri(obj.survey)
+
     def list(self, request, *args, **kwargs):
         queryset = Activity.objects.all()
         if not request.query_params:
@@ -114,3 +121,28 @@ class ActivityViewSet(CustomView):
         return Response(
             dict(status=StatusMsg.OK, count=queryset.count(), data=serializer.data)
         )        # super(ActivityViewSet, self).list(self, *args, **kwargs)
+
+
+class SurveyViewSet(CustomView):
+    queryset = Survey.objects.all().order_by('created_at')
+    serializer_class = SurveySerializer
+    lookup_url_kwarg = 'id'
+
+    def list(self, request):
+        queryset = Survey.objects.all().order_by('created_at')
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(
+            dict(status=StatusMsg.OK, count=queryset.count(), data=serializer.data)
+        )
+
+    def retrieve(self, request, activity_id, *args, **kwargs):
+        # from icecream import ic
+        # ic(request)
+        queryset = Survey.objects.filter(activity_id=activity_id).first()
+        if not queryset:
+            return Response(
+                dict(status=StatusMsg.ERROR, error=ErrorMsg.NOT_FOUND), status=400
+            )
+        else:
+            serializer = self.get_serializer(queryset)
+            return Response(dict(status=StatusMsg.OK, data=serializer.data))
