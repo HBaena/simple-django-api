@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Property, Activity
+from .models import Property, Activity, Survey
 from datetime import timedelta
 from django.utils.timezone import now
 
@@ -31,6 +31,12 @@ class PropertySerializer(serializers.ModelSerializer):
         return status
 
 
+class SurveySerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Survey
+        fields = ('id', 'answers', 'created_at')
+
+
 class ActivitySerializer(serializers.ModelSerializer):
     class PropertySerializer_(serializers.ModelSerializer):
         class Meta:
@@ -42,10 +48,35 @@ class ActivitySerializer(serializers.ModelSerializer):
             )
     VALID_STATUS = {'Active', 'Done', 'Removed'}
     property = PropertySerializer_(read_only=True)
+    survey = serializers.SerializerMethodField('get_survey')
 
     class Meta:
         model = Activity
-        fields = ('__all__')
+        fields = (
+            'property',
+            'schedule',
+            'title',
+            'created_at',
+            'updated_at',
+            'status',
+            'condition',
+            'survey'
+        )
+
+    def get_survey(self, obj):
+        """Generate survey url linked to the current activity
+
+        Args:
+            obj (Activity): Activity created in the View (have the request object)
+
+        Returns:
+            Activity: Absolute url of the survey (/api/activity/<activity_id>/survey/)
+        """
+        from django.contrib.sites.shortcuts import get_current_site
+        request = self.context.get('request')
+        domain = get_current_site(request).domain
+        return f'{domain}{request.get_full_path()}survey/'  # Absolute
+        # return f'{request.get_full_path()}survey/'  # Relative
 
     def validate_updated_at(self, updated_at):
         if updated_at:
@@ -105,10 +136,4 @@ class ActivitySerializer(serializers.ModelSerializer):
         else:
             data['condition'] = 'Overdue'
 
-        # data['status'] = 'Active'  # By default takes this value
-        # data['created_at'] = data['updated_at'] = now()  # By default takes this value
-        # raise serializers.ValidationError('FLAG')
         return data
-
-
-# ic((serializers))
