@@ -13,10 +13,10 @@ class Property(models.Model):
     created_at = models.DateTimeField(default=now())
     updated_at = models.DateTimeField(default=now())
     disabled_at = models.DateTimeField(null=True)
-    status = models.CharField(max_length=35, default='Active')
+    status = models.CharField(max_length=35, default="Active")
 
     def __str__(self):
-        return f'{self.id}, {self.address}, {self.description}'
+        return f"{self.id}, {self.address}, {self.description}"
 
 
 class Activity(models.Model):
@@ -26,18 +26,23 @@ class Activity(models.Model):
     title = models.TextField(max_length=255)
     created_at = models.DateTimeField(default=now())
     updated_at = models.DateTimeField(default=now(), null=True)
-    status = models.CharField(max_length=35, default='Active')
+    status = models.CharField(max_length=35, default="Active")
     condition = models.CharField(
-        max_length=35, default='Pending')  # Pending, Overdue, Done
+        max_length=35, default="Pending"
+    )  # Pending, Overdue, Done
+
+    def cancel(self):
+        self.status = "cancelled"
+        self.save()
 
     def __str__(self):
-        return f'{self.id}, {self.property_id}, {self.title}'
+        return f"{self.id}, {self.property_id}, {self.title}"
 
 
 class Survey(models.Model):
     activity = models.OneToOneField(Activity, on_delete=models.CASCADE)
     answers = models.JSONField()
-    created_at = models.DateTimeField()
+    created_at = models.DateTimeField(default=now())
 
     def __str__(self):
-        return f'{self.id}, {self.activity_id}, {self.answers}'
+        return f"{self.id}, {self.activity_id}, {self.answers}"
