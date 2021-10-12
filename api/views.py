@@ -3,36 +3,47 @@ from django.contrib.auth.models import User, Group
 from rest_framework import serializers
 from rest_framework import viewsets
 from rest_framework.response import Response
+
 # from rest_framework.views import APIView
 # from rest_framework.decorators import api_view
 from .serializers import PropertySerializer, ActivitySerializer, SurveySerializer
 from .models import Property, Activity, Survey
 from .responses import ErrorMsg, StatusMsg, SuccessMsg
-# from icecream import ic
+
 # from datetime import timedelta
 # from datetime import datetime
 from django.utils.timezone import now
 from django.utils.timezone import datetime
 from django.utils.timezone import timedelta
+
 # from functools import wraps
+# from icecream import ic
 
 
 def custom_retrieve(serializer, request, pk, *args, **kwargs):
     model = serializer.Meta.model
     instance = model.objects.filter(pk=pk).first()
     serializer_context = {
-        'request': request,
+        "request": request,
     }
     if not instance:
         return Response(
             dict(status=StatusMsg.ERROR, error=ErrorMsg.NOT_FOUND), status=400
         )
     else:
-        return Response(dict(status=StatusMsg.OK, data=serializer(instance, context=serializer_context).data))
+        return Response(
+            dict(
+                status=StatusMsg.OK,
+                data=serializer(instance, context=serializer_context).data,
+            )
+        )
 
 
 def custom_create(serializer, request, *args, **kwargs):
-    instance = serializer(data=request.data)
+    serializer_context = {
+        "request": request,
+    }
+    instance = serializer(data=request.data, context=serializer_context)
     if instance.is_valid():
         instance.save()
         return Response(
@@ -41,15 +52,16 @@ def custom_create(serializer, request, *args, **kwargs):
         )
     else:
         return Response(
-            dict(status=StatusMsg.ERROR,
-                 error=ErrorMsg.VALIDATION, log=instance.errors),
+            dict(
+                status=StatusMsg.ERROR, error=ErrorMsg.VALIDATION, log=instance.errors
+            ),
             status=400,
         )
 
 
 class CustomView(viewsets.ModelViewSet):
     """
-        Customs Responses for Get, Post and Put methods
+    Customs Responses for Get, Post and Put methods
     """
 
     def create(self, request):
@@ -62,22 +74,22 @@ class CustomView(viewsets.ModelViewSet):
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = User
-        fields = ['url', 'username', 'email', 'groups']
+        fields = ["url", "username", "email", "groups"]
 
 
 class GroupSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Group
-        fields = ['url', 'name']
+        fields = ["url", "name"]
 
 
 class PropertyViewSet(CustomView):
-    queryset = Property.objects.all().order_by('created_at')
+    queryset = Property.objects.all().order_by("created_at")
     serializer_class = PropertySerializer
 
     def list(self, request):
-        status = request.query_params.get('status')
-        queryset = Property.objects.all().order_by('created_at')
+        status = request.query_params.get("status")
+        queryset = Property.objects.all().order_by("created_at")
         if status:
             queryset = queryset.filter(status=status)
         serializer = self.get_serializer(queryset, many=True)
@@ -87,7 +99,7 @@ class PropertyViewSet(CustomView):
 
 
 class ActivityViewSet(CustomView):
-    queryset = Activity.objects.all().order_by('created_at')
+    queryset = Activity.objects.all().order_by("created_at")
     serializer_class = ActivitySerializer
 
     # def retrieve(self, request, pk):
@@ -103,33 +115,58 @@ class ActivityViewSet(CustomView):
                     now() + timedelta(days=7),
                 )
             )
-        if (status := request.query_params.get('status')) and status != 'all':
+        if (status := request.query_params.get("status")) and status != "all":
             queryset = queryset.filter(status=status)
 
-        if (condition := request.query_params.get('condition')) and condition != 'all':
+        if (condition := request.query_params.get("condition")) and condition != "all":
             queryset = queryset.filter(condition=condition)
 
-        if (schedule_from := request.query_params.get('schedule_from')):
+        if schedule_from := request.query_params.get("schedule_from"):
             queryset = queryset.filter(
-                schedule__gt=datetime.strptime(schedule_from, '%Y-%m-%dT%H:%M'))
+                schedule__gt=datetime.strptime(schedule_from, "%Y-%m-%dT%H:%M")
+            )
 
-        if (schedule_to := request.query_params.get('schedule_to')):
+        if schedule_to := request.query_params.get("schedule_to"):
             queryset = queryset.filter(
-                schedule__lt=datetime.strptime(schedule_to, '%Y-%m-%dT%H:%M'))
+                schedule__lt=datetime.strptime(schedule_to, "%Y-%m-%dT%H:%M")
+            )
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(
             dict(status=StatusMsg.OK, count=queryset.count(), data=serializer.data)
-        )        # super(ActivityViewSet, self).list(self, *args, **kwargs)
+        )  # super(ActivityViewSet, self).list(self, *args, **kwargs)
+
+    def create(self, request, *args, **kwargs):
+        serializer_context = {
+            "request": request,
+        }
+        data = request.data.dict()
+        data["property"] = Property.objects.filter(pk=data.get("property")).first()
+        instance = ActivitySerializer(data=data, context=serializer_context)
+        if instance.is_valid():
+            instance.save()
+            return Response(
+                dict(status=StatusMsg.OK, msg=SuccessMsg.CREATED, data=instance.data),
+                status=201,
+            )
+        else:
+            return Response(
+                dict(
+                    status=StatusMsg.ERROR,
+                    error=ErrorMsg.VALIDATION,
+                    log=instance.errors,
+                ),
+                status=400,
+            )
 
 
 class SurveyViewSet(CustomView):
-    queryset = Survey.objects.all().order_by('created_at')
+    queryset = Survey.objects.all().order_by("created_at")
     serializer_class = SurveySerializer
-    lookup_url_kwarg = 'id'
+    lookup_url_kwarg = "id"
 
     def list(self, request):
-        queryset = Survey.objects.all().order_by('created_at')
+        queryset = Survey.objects.all().order_by("created_at")
         serializer = self.get_serializer(queryset, many=True)
         return Response(
             dict(status=StatusMsg.OK, count=queryset.count(), data=serializer.data)
