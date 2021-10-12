@@ -12,6 +12,8 @@ class ErrorMsg:
     INVALID_VALUE: str = "invalid value for ({})"
     VALIDATION: str = "validation error"
     NOT_FOUND: str = "not found"
+    ACTIVITY_REQUIRED: str = "activity id is required"
+    CANCELLED: str = "this activity was cancelled"
 
 
 @dataclass(frozen=True)
