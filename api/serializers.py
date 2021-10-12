@@ -82,7 +82,10 @@ class ActivitySerializer(serializers.ModelSerializer):
 
         request = self.context.get("request")
         domain = get_current_site(request).domain
-        return f"{domain}{request.get_full_path()}survey/"  # Absolute
+        survey = Survey.objects.filter(activity_id=obj.pk).first()
+        if survey:
+            return f"{domain}/api/activities/{obj.pk}/survey/"  # Absolute
+        return None
         # return f'{request.get_full_path()}survey/'  # Relative
 
     def validate_updated_at(self, updated_at):
