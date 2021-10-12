@@ -12,8 +12,8 @@ urlpatterns = [
     path("", include(router.urls)),
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
     path(
-        "activities/<int:activity_id>/survey/",
-        views.SurveyViewSet.as_view({"get": "retrieve"}),
+        "activities/<int:pk>/survey/",
+        views.SurveyViewSet.as_view({"get": "retrieve", "post": "create"}),
     ),
     path("surveys/", views.SurveyViewSet.as_view({"get": "list"})),
 ]
