@@ -59,6 +59,7 @@ class ActivitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Activity
         fields = (
+            "id",
             "property",
             "schedule",
             "title",
