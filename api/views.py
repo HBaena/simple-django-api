@@ -16,8 +16,42 @@ from django.utils.timezone import now
 from django.utils.timezone import datetime
 from django.utils.timezone import timedelta
 
-# from functools import wraps
-# from icecream import ic
+from functools import wraps
+from icecream import ic
+
+
+def validate_activity_exists():
+    """
+    Function: jwt_required_in_db
+    Summary: Check if the token is valid or not and then read
+             the database to verify that is active in database
+    """
+
+    def wrapper(fn):
+        @wraps(fn)
+        def decorator(*args, **kwargs):
+            if not (pk := kwargs.get("pk")):
+                return Response(
+                    {"status": StatusMsg.ERROR, "error": ErrorMsg.ACTIVITY_REQUIRED}
+                )
+            context = {"request": kwargs.get("request")}
+            activity = ActivitySerializer(
+                Activity.objects.filter(pk=pk).first(), context=context
+            )
+            if not activity.instance:
+                return Response(
+                    {"status": StatusMsg.ERROR, "error": ErrorMsg.NOT_FOUND}
+                )
+            ic(activity.instance.status)
+            if activity.instance.status == "cancelled":
+                return Response(
+                    {"status": StatusMsg.ERROR, "error": ErrorMsg.CANCELLED}
+                )
+            return fn(activity=activity, *args, **kwargs)
+
+        return decorator
+
+    return wrapper
 
 
 def custom_retrieve(serializer, request, pk, *args, **kwargs):
@@ -159,6 +193,10 @@ class ActivityViewSet(CustomView):
                 status=400,
             )
 
+    @validate_activity_exists()
+    def destroy(self, request, pk=None, activity=None):
+        return Response("Hello")
+
 
 class SurveyViewSet(CustomView):
     queryset = Survey.objects.all().order_by("created_at")
@@ -172,10 +210,9 @@ class SurveyViewSet(CustomView):
             dict(status=StatusMsg.OK, count=queryset.count(), data=serializer.data)
         )
 
-    def retrieve(self, request, activity_id, *args, **kwargs):
+    def retrieve(self, request, pk, *args, **kwargs):
         # from icecream import ic
-        # ic(request)
-        queryset = Survey.objects.filter(activity_id=activity_id).first()
+        queryset = Survey.objects.filter(activity_id=pk).first()
         if not queryset:
             return Response(
                 dict(status=StatusMsg.ERROR, error=ErrorMsg.NOT_FOUND), status=400
