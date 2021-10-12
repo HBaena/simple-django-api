@@ -195,7 +195,12 @@ class ActivityViewSet(CustomView):
 
     @validate_activity_exists()
     def destroy(self, request, pk=None, activity=None):
-        return Response("Hello")
+        activity.instance.cancel()
+        return Response({"status": StatusMsg.OK, "msg": SuccessMsg.CANCELLED})
+
+    @validate_activity_exists()
+    def partial_update(self, request, pk=None, activity=None):
+        return Response("hello")
 
 
 class SurveyViewSet(CustomView):

@@ -33,6 +33,7 @@ class Activity(models.Model):
 
     def cancel(self):
         self.status = "cancelled"
+        self.updated_at = now()
         self.save()
 
     def __str__(self):

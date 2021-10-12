@@ -19,6 +19,7 @@ class ErrorMsg:
 @dataclass(frozen=True)
 class SuccessMsg:
     CREATED: str = "created"
+    CANCELLED: str = "cancelled"
 
 
 @dataclass(frozen=True)
