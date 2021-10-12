@@ -36,10 +36,14 @@ class PropertySerializer(serializers.ModelSerializer):
         return status
 
 
-class SurveySerializer(serializers.HyperlinkedModelSerializer):
+class SurveySerializer(serializers.ModelSerializer):
     class Meta:
         model = Survey
-        fields = ("id", "answers", "created_at")
+        fields = ("id", "answers", "created_at", "activity")
+
+    # def validate(self, data):
+    #     data['activity_id'] = self.initial_data.get('activity_id')
+    #     return data
 
 
 class ActivitySerializer(serializers.ModelSerializer):

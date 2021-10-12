@@ -225,6 +225,7 @@ class SurveyViewSet(CustomView):
             dict(status=StatusMsg.OK, count=queryset.count(), data=serializer.data)
         )
 
+    @validate_activity_exists()
     def retrieve(self, request, pk, *args, **kwargs):
         # from icecream import ic
         queryset = Survey.objects.filter(activity_id=pk).first()
@@ -235,3 +236,27 @@ class SurveyViewSet(CustomView):
         else:
             serializer = self.get_serializer(queryset)
             return Response(dict(status=StatusMsg.OK, data=serializer.data))
+
+    @validate_activity_exists()
+    def create(self, request, pk, activity):
+        data = request.data
+        data["activity"] = activity.instance.pk  # Or just pk
+
+        context = {"request": request}
+        survey = SurveySerializer(data=data, context=context)
+        if survey.is_valid():
+            survey.save()
+            return Response(
+                {"status": StatusMsg.OK, "msg": SuccessMsg.CREATED, "data": survey.data}
+            )
+        else:
+            # raise serializers.ValidationError({'error': survey.errors})
+            return Response(
+                {
+                    "status": StatusMsg.ERROR,
+                    "msg": ErrorMsg.VALIDATION,
+                    "log": survey.errors,
+                }
+            )
+
+        return Response("hello")
