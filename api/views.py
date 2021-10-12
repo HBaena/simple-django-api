@@ -200,7 +200,17 @@ class ActivityViewSet(CustomView):
 
     @validate_activity_exists()
     def partial_update(self, request, pk=None, activity=None):
-        return Response("hello")
+        try:
+            activity.reschedule(request.data.get("schedule"))
+        except serializers.ValidationError as e:
+            return Response(
+                {
+                    "status": StatusMsg.ERROR,
+                    "error": ErrorMsg.VALIDATION,
+                    "log": e.detail,
+                }
+            )
+        return Response({"status": StatusMsg.OK, "msg": SuccessMsg.RESCHEDULE})
 
 
 class SurveyViewSet(CustomView):

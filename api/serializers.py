@@ -6,7 +6,7 @@ from django.utils.timezone import datetime
 from django.utils.timezone import make_aware
 from django.utils.timezone import get_current_timezone
 
-# from icecream import ic
+from icecream import ic
 
 
 class PropertySerializer(serializers.ModelSerializer):
@@ -89,6 +89,45 @@ class ActivitySerializer(serializers.ModelSerializer):
         return None
         # return f'{request.get_full_path()}survey/'  # Relative
 
+    def reschedule(self, schedule):
+        if not schedule:
+            raise serializers.ValidationError({"error": "No schedule was recieved"})
+        try:
+            schedule = datetime.strptime(schedule, "%Y-%m-%dT%H:%M")
+        except Exception as e:
+            ic(e)
+            raise serializers.ValidationError({"error": "DateTime format error"})
+
+        if make_aware(schedule, get_current_timezone()) < now():
+            raise serializers.ValidationError(
+                {"error": "schedule date time must be greater than now"}
+            )
+        acitivities = (
+            Activity.objects.exclude(status="cancelled")
+            .filter(property=self.instance.property)
+            .filter(
+                schedule__range=(
+                    schedule - timedelta(hours=1),
+                    schedule + timedelta(hours=1),
+                )
+            )
+        )
+        if acitivities:
+            raise serializers.ValidationError(
+                {
+                    "error": (
+                        f"There is an activity scheduled at"
+                        f"{acitivities[0].schedule} and it could cross. "
+                        "Remember that activities can last up to an hour."
+                    ),
+                    "acitivities": acitivities.values_list(),
+                }
+            )
+        self.instance.schedule = schedule
+        self.instance.updated_at = now()
+        self.instance.condition = "Pending"
+        self.instance.save()
+
     def validate_updated_at(self, updated_at):
         if updated_at:
             raise serializers.ValidationError(
@@ -129,10 +168,14 @@ class ActivitySerializer(serializers.ModelSerializer):
                 "Selected property is Inactive or Removed"
             )
         schedule = datetime.strptime(data.get("schedule"), "%Y-%m-%dT%H:%M")
-        acitivities = Activity.objects.filter(property=property_).filter(
-            schedule__range=(
-                schedule - timedelta(hours=1),
-                schedule + timedelta(hours=1),
+        acitivities = (
+            Activity.objects.exclude(status="cancelled")
+            .filter(property=property_)
+            .filter(
+                schedule__range=(
+                    schedule - timedelta(hours=1),
+                    schedule + timedelta(hours=1),
+                )
             )
         )
         if acitivities:

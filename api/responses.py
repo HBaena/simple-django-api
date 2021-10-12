@@ -20,6 +20,7 @@ class ErrorMsg:
 class SuccessMsg:
     CREATED: str = "created"
     CANCELLED: str = "cancelled"
+    RESCHEDULE: str = "reschedule"
 
 
 @dataclass(frozen=True)
