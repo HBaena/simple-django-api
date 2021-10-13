@@ -15,6 +15,7 @@ class ErrorMsg:
     ACTIVITY_REQUIRED: str = "activity id is required"
     CANCELLED: str = "this activity was cancelled"
     EMPTY_REQUEST: str = "no request data received"
+    NOT_ALLOWED: str = "method not allowed"
 
 
 @dataclass(frozen=True)
