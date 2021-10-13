@@ -11,7 +11,9 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 
 from pathlib import Path
-import json
+
+# import json
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,13 +23,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-5gpn7#f9=km)rt^*16uq@4zfocj4twn(r-ek(0w_%4p#4jc2_q"
+SECRET_KEY = Path(Path.cwd() / "secret.key").read_text()
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = int(os.environ.get("DEBUG", default=0))
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", default="localhost").split(" ")
 
 # Application definition
 
@@ -83,7 +84,18 @@ WSGI_APPLICATION = "api_test.wsgi.application"
 #     }
 # }
 
-DATABASES = json.loads(Path(Path.cwd() / "db.json").read_text())
+# DATABASES = json.loads(Path(Path.cwd() / "db.json").read_text())
+
+DATABASES = {  # Docker
+    "default": {
+        "ENGINE": os.environ.get("SQL_ENGINE", "django.db.backends.sqlite3"),
+        "NAME": os.environ.get("SQL_DATABASE", BASE_DIR / "db.sqlite3"),
+        "USER": os.environ.get("SQL_USER", "user"),
+        "PASSWORD": os.environ.get("SQL_PASSWORD", "password"),
+        "HOST": os.environ.get("SQL_HOST", "localhost"),
+        "PORT": os.environ.get("SQL_PORT", "5432"),
+    }
+}
 
 REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
