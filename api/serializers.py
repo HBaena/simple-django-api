@@ -6,7 +6,7 @@ from django.utils.timezone import datetime
 from django.utils.timezone import make_aware
 from django.utils.timezone import get_current_timezone
 
-from icecream import ic
+# from icecream import ic
 
 
 class PropertySerializer(serializers.ModelSerializer):
@@ -99,7 +99,7 @@ class ActivitySerializer(serializers.ModelSerializer):
         try:
             schedule = datetime.strptime(schedule, "%Y-%m-%dT%H:%M")
         except Exception as e:
-            ic(e)
+            print(e)
             raise serializers.ValidationError({"error": "DateTime format error"})
 
         if make_aware(schedule, get_current_timezone()) < now():
@@ -171,7 +171,11 @@ class ActivitySerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "Selected property is Inactive or Removed"
             )
-        schedule = datetime.strptime(data.get("schedule"), "%Y-%m-%dT%H:%M")
+        try:
+            schedule = datetime.strptime(data.get("schedule"), "%Y-%m-%dT%H:%M")
+        except Exception as e:
+            print(e)
+            raise serializers.ValidationError({"error": "DateTime format error"})
         acitivities = (
             Activity.objects.exclude(status="cancelled")
             .filter(property=property_)
