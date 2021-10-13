@@ -21,10 +21,13 @@ from icecream import ic
 
 
 def validate_activity_exists():
-    """
-    Function: jwt_required_in_db
-    Summary: Check if the token is valid or not and then read
-             the database to verify that is active in database
+    """Decorator for validating that the id received for activity is from a valid one
+
+    Returns:
+        Response: Some of these errors:
+            ACTIVITY_REQUIRED
+            NOT_FOUND
+            CANCELLED
     """
 
     def wrapper(fn):
@@ -48,6 +51,27 @@ def validate_activity_exists():
                     {"status": StatusMsg.ERROR, "error": ErrorMsg.CANCELLED}
                 )
             return fn(activity=activity, *args, **kwargs)
+
+        return decorator
+
+    return wrapper
+
+
+def validate_empty_request():
+    """Validate if the form data from the request is empty
+
+    Returns:
+        Response: EMPTY_REQUEST error
+    """
+
+    def wrapper(fn):
+        @wraps(fn)
+        def decorator(*args, **kwargs):
+            if not (request := kwargs.get("request")) or not request.data:
+                return Response(
+                    {"status": StatusMsg.ERROR, "error": ErrorMsg.EMPTY_REQUEST}
+                )
+            return fn(*args, **kwargs)
 
         return decorator
 
@@ -98,6 +122,7 @@ class CustomView(viewsets.ModelViewSet):
     Customs Responses for Get, Post and Put methods
     """
 
+    @validate_empty_request()
     def create(self, request):
         return custom_create(self.serializer_class, request)
 
@@ -170,6 +195,7 @@ class ActivityViewSet(CustomView):
             dict(status=StatusMsg.OK, count=queryset.count(), data=serializer.data)
         )  # super(ActivityViewSet, self).list(self, *args, **kwargs)
 
+    @validate_empty_request()
     def create(self, request, *args, **kwargs):
         serializer_context = {
             "request": request,
@@ -198,6 +224,7 @@ class ActivityViewSet(CustomView):
         activity.instance.cancel()
         return Response({"status": StatusMsg.OK, "msg": SuccessMsg.CANCELLED})
 
+    @validate_empty_request()
     @validate_activity_exists()
     def partial_update(self, request, pk=None, activity=None):
         try:
@@ -237,6 +264,7 @@ class SurveyViewSet(CustomView):
             serializer = self.get_serializer(queryset)
             return Response(dict(status=StatusMsg.OK, data=serializer.data))
 
+    @validate_empty_request()
     @validate_activity_exists()
     def create(self, request, pk, activity):
         data = request.data
