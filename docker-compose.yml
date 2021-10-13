@@ -1,0 +1,23 @@
+version: '2.2'
+
+services:
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./app/:/usr/src/app/
+    ports:
+      - 8000:8000
+    env_file:
+      - ./.env.dev
+  db:
+    image: postgres:13.0-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=hbaena
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=api_django
+
+volumes:
+  postgres_data:

@@ -1,0 +1,8 @@
+.git
+.gitignore
+*-env
+test*
+*.log
+*.out
+*.sqlite*
+.mypy_cache
