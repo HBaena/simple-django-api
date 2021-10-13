@@ -17,7 +17,8 @@ from django.utils.timezone import datetime
 from django.utils.timezone import timedelta
 
 from functools import wraps
-from icecream import ic
+
+# from icecream import ic
 
 
 def validate_activity_exists():
@@ -35,7 +36,8 @@ def validate_activity_exists():
         def decorator(*args, **kwargs):
             if not (pk := kwargs.get("pk")):
                 return Response(
-                    {"status": StatusMsg.ERROR, "error": ErrorMsg.ACTIVITY_REQUIRED}
+                    {"status": StatusMsg.ERROR, "error": ErrorMsg.ACTIVITY_REQUIRED},
+                    status=400,
                 )
             context = {"request": kwargs.get("request")}
             activity = ActivitySerializer(
@@ -43,12 +45,11 @@ def validate_activity_exists():
             )
             if not activity.instance:
                 return Response(
-                    {"status": StatusMsg.ERROR, "error": ErrorMsg.NOT_FOUND}
+                    {"status": StatusMsg.ERROR, "error": ErrorMsg.NOT_FOUND}, status=400
                 )
-            ic(activity.instance.status)
             if activity.instance.status == "cancelled":
                 return Response(
-                    {"status": StatusMsg.ERROR, "error": ErrorMsg.CANCELLED}
+                    {"status": StatusMsg.ERROR, "error": ErrorMsg.CANCELLED}, status=400
                 )
             return fn(activity=activity, *args, **kwargs)
 
@@ -67,9 +68,10 @@ def validate_empty_request():
     def wrapper(fn):
         @wraps(fn)
         def decorator(*args, **kwargs):
-            if not (request := kwargs.get("request")) or not request.data:
+            if not (request := args[1]) or not request.data:
                 return Response(
-                    {"status": StatusMsg.ERROR, "error": ErrorMsg.EMPTY_REQUEST}
+                    {"status": StatusMsg.ERROR, "error": ErrorMsg.EMPTY_REQUEST},
+                    status=400,
                 )
             return fn(*args, **kwargs)
 
@@ -129,6 +131,9 @@ class CustomView(viewsets.ModelViewSet):
     def retrieve(self, request, pk):
         return custom_retrieve(self.serializer_class, request, pk)
 
+    def update(self, request, pk):
+        return Response({"status": StatusMsg.ERROR, "error": ErrorMsg.NOT_ALLOWED})
+
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
@@ -179,17 +184,20 @@ class ActivityViewSet(CustomView):
 
         if (condition := request.query_params.get("condition")) and condition != "all":
             queryset = queryset.filter(condition=condition)
+        try:
 
-        if schedule_from := request.query_params.get("schedule_from"):
-            queryset = queryset.filter(
-                schedule__gt=datetime.strptime(schedule_from, "%Y-%m-%dT%H:%M")
-            )
+            if schedule_from := request.query_params.get("schedule_from"):
+                queryset = queryset.filter(
+                    schedule__gt=datetime.strptime(schedule_from, "%Y-%m-%dT%H:%M")
+                )
 
-        if schedule_to := request.query_params.get("schedule_to"):
-            queryset = queryset.filter(
-                schedule__lt=datetime.strptime(schedule_to, "%Y-%m-%dT%H:%M")
-            )
-
+            if schedule_to := request.query_params.get("schedule_to"):
+                queryset = queryset.filter(
+                    schedule__lt=datetime.strptime(schedule_to, "%Y-%m-%dT%H:%M")
+                )
+        except Exception as e:
+            print(e)
+            raise serializers.ValidationError({"error": "DateTime format error"})
         serializer = self.get_serializer(queryset, many=True)
         return Response(
             dict(status=StatusMsg.OK, count=queryset.count(), data=serializer.data)
@@ -235,7 +243,8 @@ class ActivityViewSet(CustomView):
                     "status": StatusMsg.ERROR,
                     "error": ErrorMsg.VALIDATION,
                     "log": e.detail,
-                }
+                },
+                status=400,
             )
         return Response({"status": StatusMsg.OK, "msg": SuccessMsg.RESCHEDULE})
 
@@ -284,7 +293,8 @@ class SurveyViewSet(CustomView):
                     "status": StatusMsg.ERROR,
                     "msg": ErrorMsg.VALIDATION,
                     "log": survey.errors,
-                }
+                },
+                status=400,
             )
 
         return Response("hello")
