@@ -14,6 +14,7 @@ class ErrorMsg:
     NOT_FOUND: str = "not found"
     ACTIVITY_REQUIRED: str = "activity id is required"
     CANCELLED: str = "this activity was cancelled"
+    EMPTY_REQUEST: str = "no request data received"
 
 
 @dataclass(frozen=True)
